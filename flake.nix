@@ -334,6 +334,9 @@ except according to those terms.
             rust-stable
             rust-analyzer
             cargo-whatfeatures
+            cargo-release
+            cargo-license
+            cargo-tarpaulin
 
             # for shell
             zsh
