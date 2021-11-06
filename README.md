@@ -8,4 +8,4 @@ This command-line utility allows the user to change the brightness of a backlit 
 This software is distributed under the terms of both the MIT license and the
 Apache License (Version 2.0).
 
-See the LICENSE-APACHE and LICENSE-MIT files for license details.1
+See the LICENSE-APACHE and LICENSE-MIT files for license details.
