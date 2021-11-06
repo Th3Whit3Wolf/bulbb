@@ -1,0 +1,21 @@
+[package]
+name = "bulbb"
+license = "MIT/Apache-2.0"
+version = "0.1.0"
+readme = "README.md"
+repository = "https://github.com/Th3Whit3Wolf/bulbb"
+homepage = "https://github.com/Th3Whit3Wolf/bulbb"
+documentation = "https://docs.rs/bulbb/"
+authors = ["Th3Whit3Wolf <the.white.wolf.is.1337@gmail.com>"]
+edition = "2018"
+description = '''
+Bulbb is a library to manage backlight brightness.
+'''
+keywords = [
+    "linux", 
+    "backlight", 
+    "brightness"
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
