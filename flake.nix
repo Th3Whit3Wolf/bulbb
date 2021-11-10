@@ -1,5 +1,4 @@
 {
-
   inputs = {
     nixpkgs.url = "nixpkgs/release-21.05";
     utils.url = "github:numtide/flake-utils";
@@ -67,152 +66,6 @@
             nline='"rust-analyzer.server.path": "${pkgs.rust-analyzer}/bin/rust-analyzer",'
             sed -i "s|$line|$nline|g" $PRJ_ROOT/.vscode/settings.json
           fi
-        '';
-
-        newFile = pkgs.writeScriptBin "newFile" ''
-          #!${pkgs.stdenv.shell}
-
-          set -Eeo pipefail
-          trap cleanup SIGINT SIGTERM ERR EXIT
-
-          ROOT_PATH="''${PRJ_ROOT}/src"
-
-          usage() {
-            ${pkgs.coreutils}/bin/cat <<EOF
-          Usage: new [-h] [-d] PATH
-
-          Create a new file with a license header in it.
-
-          Available options:
-
-          -h, --help      Print this help and exit
-          -d, --directory Create a directory with a mod.rs inside of it
-          EOF
-            exit
-          }
-
-          cleanup() {
-            trap - SIGINT SIGTERM ERR EXIT
-            # script cleanup here
-          }
-
-          setup_colors() {
-            if [[ -t 2 ]] && [[ -z "''${NO_COLOR-}" ]] && [[ "''${TERM-}" != "dumb" ]]; then
-              NOFORMAT='\033[0m' RED='\033[0;31m' GREEN='\033[0;32m' ORANGE='\033[0;33m' BLUE='\033[0;34m' PURPLE='\033[0;35m' CYAN='\033[0;36m' YELLOW='\033[1;33m'
-            else
-              NOFORMAT="" RED="" GREEN="" ORANGE="" BLUE="" PURPLE="" CYAN="" YELLOW=""
-            fi
-          }
-
-          msg() {
-            echo >&2 -e "''${1-}"
-          }
-
-          die() {
-            local msg=$1
-            local code=''${2-1} # default exit status 1
-            msg "$msg"
-            exit "$code"
-          }
-
-          cleanse_path() {
-            pth=$1
-            if [[ "''${pth:0:1}" == "/" || "''${pth:0:1}" == "~" || "''${pth:0:1}" == "$" ]]; then
-              die "Please give path relative to ''${ROOT_PATH}"
-            else
-              echo "''${ROOT_PATH}/''${pth}"
-            fi
-          }
-
-          get_rel_path() {
-            PATH=$1
-            REL=$(${pkgs.coreutils}/bin/realpath --relative-to="''${PRJ_ROOT}" "''${PATH}")
-            echo "''${REL}"
-          }
-
-          mkFile() {
-            PATH=$(cleanse_path $1)
-            DIR=$(${pkgs.coreutils}/bin/dirname "''${PATH}")
-            FILENAME=$(${pkgs.coreutils}/bin/basename "''${PATH}")
-            REL_DIR=$(get_rel_path ''${DIR})
-            REL_FILE=$(get_rel_path ''${PATH})
-
-            if [[ ! -d "''${DIR}" ]]; then
-              mkdir -p "''${DIR}"
-              echo "Creatied directory ''${REL_DIR}"
-            fi
-            if [[ "''${FILENAME}" == *"."* ]]; then 
-              FILE_EXTENSION=$(echo "''${FILENAME}" | cut -d '.' -f2- )
-
-              case "''${FILE_EXTENSION}" in
-                rs)
-                  ${pkgs.coreutils}/bin/cat <<EOF >> "''${PATH}"
-          /*
-Copyright 2021 David Karrick
-
-Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-<LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
-option. This file may not be copied, modified, or distributed
-except according to those terms.
-          */
-
-
-          EOF
-          echo "Created file ''${REL_FILE}"
-
-              ;;
-              *) die "Unrecongnized file extension" ;;
-              esac
-            else
-              ${pkgs.coreutils}/bin/cat <<EOF >> "''${PATH}.rs"
-          /*
-Copyright 2021 David Karrick
-
-Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-<LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
-option. This file may not be copied, modified, or distributed
-except according to those terms.
-          */
-
-
-          EOF
-          echo "Created file ''${REL_FILE}.rs"
-            fi
-          }
-
-          main() {
-            args=("$@")
-
-            if [[ ''${#args[@]} -gt 0 ]]; then
-              while :; do
-                case "''${args[0]}" in
-                -h | --help) usage ;;
-                -d | --directory) 
-                  if [[ ''${#args[@]} -eq 2 ]]; then
-                    mkFile "''${args[1]}/mod.rs"
-          
-                    return 0
-                  else
-                    die "Missing path to new directory"
-                  fi
-                ;;
-                *)
-                  mkFile "''${args[0]}"
-        
-                  return 0
-                ;;
-                esac
-              done
-            else
-              die "Missing script arguments"
-            fi
-          }
-
-          main "$@"
-          setup_colors
-
         '';
 
         extensions = (with pkgs.vscode-extensions; [
@@ -320,12 +173,6 @@ except according to those terms.
               name = "test";
               help = "Run test for bulbb";
               command = "cargo test";
-            }
-            { 
-              category = "bulbb";
-              name = "nf";
-              help = "Create new file in bulbb src directory";
-              command = "${newFile}/bin/newFile";
             }
           ];
 
