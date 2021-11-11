@@ -23,6 +23,74 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "dbus")]
 use zbus::Connection;
 
+#[derive(Clone, Copy, Debug)]
+pub struct LedFilterable<'a> {
+    device_name: Option<&'a str>,
+    color: Option<LedColor>,
+    function: Option<LedFunction>,
+}
+
+impl<'a> LedFilterable<'a> {
+    fn new() -> LedFilterable<'a> {
+        LedFilterable {
+            device_name: None,
+            color: None,
+            function: None,
+        }
+    }
+    fn with_device_name(&'a mut self, device_name: &'a str) -> &'a mut LedFilterable {
+        self.device_name = Some(device_name);
+        self
+    }
+    fn with_color(&'a mut self, color: LedColor) -> &'a mut LedFilterable {
+        self.color = Some(color);
+        self
+    }
+    fn with_function(&'a mut self, function: LedFunction) -> &'a mut LedFilterable {
+        self.function = Some(function);
+        self
+    }
+    fn finish(&'a mut self) -> LedFilterable {
+         *(self)    
+    }
+    fn filter_by_device_name(&'a self, to_be_filtered: &str) -> bool {
+        if let Some(device_name) = &self.device_name {
+            to_be_filtered.contains(device_name)
+        } else {
+            false
+        }
+    }
+    fn filter_by_color(&'a self, to_be_filtered: &str) -> bool {
+        if let Some(color) = &self.color {
+            to_be_filtered.contains(color.to_string().as_str())
+        } else {
+            false
+        }
+    }
+    fn filter_by_function(&'a self, pre_filter: &str) -> bool {
+        if let Some(function) = &self.function {
+            pre_filter.contains(function.to_string().as_str())
+        } else {
+            false
+        }
+    }
+    fn filter(&'a self, to_be_filtered: &str) -> bool {
+        self.filter_by_device_name(to_be_filtered)
+            || self.filter_by_color(to_be_filtered)
+            || self.filter_by_function(to_be_filtered)
+    }
+}
+
+fn multi_filter_led(filters: &[LedFilterable], to_be_filtered: &str) -> bool {
+    let mut status = false;
+    for f in filters {
+        if f.filter(to_be_filtered) {
+            status = true;
+        }
+    }
+    status
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "dbus", derive(Serialize, Deserialize))]
 /// LED device information
@@ -89,6 +157,43 @@ pub struct LedInfo {
 }
 
 impl LedDevice {
+    pub fn get_led_devices_with_filter(f: LedFilterable) -> Result<Vec<LedDevice>, Error> {
+        if Path::new(LEDS_DIR).is_dir() {
+            fs::read_dir(LEDS_DIR)
+                .unwrap()
+                .into_iter()
+                .filter(|r| r.is_ok()) // Get rid of Err variants for Result<DirEntry>
+                .map(|r| r.unwrap().file_name().into_string()) // This is safe, since we only have the Ok variants
+                .filter(|r| r.is_ok())
+                .map(|r| r.unwrap()) // This is safe, since we only have the Ok variants
+                // Get rid of Err variants for Result<DirEntry>
+                .filter(|e| {
+                    f.filter_by_device_name(e) || f.filter_by_color(e) || f.filter_by_function(e)
+                })
+                .map(LedDevice::get_led_device)
+                .collect::<Result<Vec<LedDevice>, Error>>()
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    pub fn get_led_devices_with_multi_filter(f: &[LedFilterable]) -> Result<Vec<LedDevice>, Error> {
+        if Path::new(LEDS_DIR).is_dir() {
+            fs::read_dir(LEDS_DIR)
+                .unwrap()
+                .into_iter()
+                .filter(|r| r.is_ok()) // Get rid of Err variants for Result<DirEntry>
+                .map(|r| r.unwrap().file_name().into_string()) // This is safe, since we only have the Ok variants
+                .filter(|r| r.is_ok())
+                .map(|r| r.unwrap()) // This is safe, since we only have the Ok variants
+                // Get rid of Err variants for Result<DirEntry>
+                .filter(|e| multi_filter_led(f, e))
+                .map(LedDevice::get_led_device)
+                .collect::<Result<Vec<LedDevice>, Error>>()
+        } else {
+            Ok(Vec::new())
+        }
+    }
     /// Get LED by device name.
     ///
     /// # Examples
@@ -161,21 +266,11 @@ impl LedDevice {
     /// }
     /// ```
     pub fn get_all_keyboard_devices() -> Result<Vec<LedDevice>, Error> {
-        let mut kbds = Vec::with_capacity(1);
-
-        if Path::new(LEDS_DIR).is_dir() {
-            for device in fs::read_dir(LEDS_DIR)? {
-                let device = device?;
-                let device_name = device.file_name().into_string().unwrap();
-
-                match LedDevice::get_led_device(device_name) {
-                    Ok(dev) => kbds.push(dev),
-                    Err(e) => return Err(e),
-                }
-            }
-        }
-
-        Ok(kbds)
+        LedDevice::get_led_devices_with_filter(LedFilterable {
+            device_name: None,
+            color: None,
+            function: Some(LedFunction::KbdBacklight),
+        })
     }
 
     /// Get name of LED device.
@@ -915,5 +1010,34 @@ Device: {}
         for led in leds {
             format_led_device(led)
         }
+    }
+
+    #[test]
+    fn get_all_keyboard_devices() {
+        let keyboards = LedDevice::get_all_keyboard_devices().unwrap();
+        for kbd in keyboards {
+            format_led_device(kbd)
+        }
+    }
+
+    #[test]
+    fn filter() {
+        let filter1 = LedFilterable {
+            device_name: Some("dev"),
+            color: None,
+            function: None,
+        };
+
+        //let mut led_filterable = LedFilterable::new();
+        //let mut filter2 = led_filterable.with_device_name("dev");
+        //let filter2 = *(filter2);
+
+        let mut filter2 = LedFilterable::new();
+        let filter2 = filter2.with_device_name("dev").finish();
+        //assert_eq!(filter1, filter2);
+        assert_eq!(filter1.device_name, filter2.device_name);
+        assert_eq!(filter1.color.is_none(), filter2.color.is_none());
+        assert_eq!(filter1.function.is_none(), filter2.function.is_none());
+
     }
 }
