@@ -51,7 +51,7 @@ impl<'a> LedFilterable<'a> {
         self
     }
     fn finish(&'a mut self) -> LedFilterable {
-         *(self)    
+        *(self)
     }
     fn filter_by_device_name(&'a self, to_be_filtered: &str) -> bool {
         if let Some(device_name) = &self.device_name {
@@ -935,37 +935,7 @@ impl fmt::Display for LedFunction {
 mod tests {
     use super::*;
 
-    fn format_led_device(led: LedDevice) {
-        let led_c = if let Some(c) = led.info.color {
-            c.to_string()
-        } else {
-            String::from("")
-        };
-        let led_f = if let Some(f) = led.info.function {
-            f.to_string()
-        } else {
-            String::from("")
-        };
-
-        println!(
-            "
-Device: {}
-    Info
-\tDevice Name: {}
-\tColor: {}
-\tFunction: {}
-	Brightness
-\tMax: {}
-\tCurrent: {}
-		",
-            led.info.device,
-            led.info.device_name.unwrap_or_else(|| String::from("")),
-            led_c,
-            led_f,
-            led.max_brightness,
-            led.brightness
-        );
-    }
+    use crate::utils::format_led_device;
 
     #[test]
     fn parse_led_device_names() {
@@ -1033,6 +1003,5 @@ Device: {}
         assert_eq!(filter1.device_name, filter2.device_name);
         assert_eq!(filter1.color.is_none(), filter2.color.is_none());
         assert_eq!(filter1.function.is_none(), filter2.function.is_none());
-
     }
 }

@@ -387,25 +387,7 @@ impl MonitorDevice {
 mod tests {
     use super::*;
 
-    fn format_monitor_device(bl: MonitorDevice) {
-        println!(
-            "
-Device: {}
-	Type: {}
-	Power: {}
-	Brightness
-\tMax: {}
-\tActual: {}
-\tCurrent: {}
-		",
-            bl.device,
-            String::from(&bl.bl_type),
-            bl.bl_power,
-            bl.max_brightness,
-            bl.actual_brightness,
-            bl.brightness
-        );
-    }
+    use crate::utils::format_monitor_device;
 
     #[test]
     fn get_all_monitor_devices() {

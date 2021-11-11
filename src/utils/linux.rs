@@ -12,7 +12,11 @@ use std::{
     path::PathBuf,
 };
 
-use crate::{error::Error, misc::LEDS_DIR, monitor::BACKLIGHT_DIR};
+use crate::{
+    error::Error,
+    misc::{LedDevice, LEDS_DIR},
+    monitor::{MonitorDevice, BACKLIGHT_DIR},
+};
 
 pub enum SysBacklightInterface {
     Power,
@@ -56,4 +60,56 @@ pub fn read_sys_led(device: &str, info: SysBacklightInterface) -> Result<String,
         Ok(s) => Ok(s.trim().to_string()),
         Err(e) => Err(Error::Io(e)),
     }
+}
+
+pub fn format_monitor_device(bl: MonitorDevice) {
+    println!(
+        "
+Device: {}
+Type: {}
+Power: {}
+Brightness
+\tMax: {}
+\tActual: {}
+\tCurrent: {}
+    ",
+        bl.device,
+        String::from(&bl.bl_type),
+        bl.bl_power,
+        bl.max_brightness,
+        bl.actual_brightness,
+        bl.brightness
+    );
+}
+
+pub fn format_led_device(led: LedDevice) {
+    let led_c = if let Some(c) = led.info.color {
+        c.to_string()
+    } else {
+        String::from("")
+    };
+    let led_f = if let Some(f) = led.info.function {
+        f.to_string()
+    } else {
+        String::from("")
+    };
+
+    println!(
+        "
+Device: {}
+Info
+\tDevice Name: {}
+\tColor: {}
+\tFunction: {}
+Brightness
+\tMax: {}
+\tCurrent: {}
+    ",
+        led.info.device,
+        led.info.device_name.unwrap_or_else(|| String::from("")),
+        led_c,
+        led_f,
+        led.max_brightness,
+        led.brightness
+    );
 }

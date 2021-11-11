@@ -11,4 +11,7 @@ except according to those terms.
 pub mod linux;
 
 #[cfg(target_os = "linux")]
-pub use self::linux::{read_sys_backlight, read_sys_led, SysBacklightInterface};
+pub use self::linux::{
+    format_led_device, format_monitor_device, read_sys_backlight, read_sys_led,
+    SysBacklightInterface,
+};
