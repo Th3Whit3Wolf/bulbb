@@ -1028,13 +1028,8 @@ Device: {}
             function: None,
         };
 
-        //let mut led_filterable = LedFilterable::new();
-        //let mut filter2 = led_filterable.with_device_name("dev");
-        //let filter2 = *(filter2);
-
         let mut filter2 = LedFilterable::new();
         let filter2 = filter2.with_device_name("dev").finish();
-        //assert_eq!(filter1, filter2);
         assert_eq!(filter1.device_name, filter2.device_name);
         assert_eq!(filter1.color.is_none(), filter2.color.is_none());
         assert_eq!(filter1.function.is_none(), filter2.function.is_none());
